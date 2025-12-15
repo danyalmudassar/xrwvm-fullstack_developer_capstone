@@ -22,14 +22,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY =\
+SECRET_KEY = \
     'django-insecure-ccow$tz_=9%dxu4(0%^(z%nx32#s@(zt9$ih@)5l54yny)wm-0'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-CSRF_TRUSTED_ORIGINS = []
+# --- START: Required updates for Lab URL and Security ---
+# NOTE: Replace <your application URL here> with your actual lab URL (e.g., https://<id>.labs.cognitiveclass.ai)
+ALLOWED_HOSTS=['localhost','dmudassar2-8000.theianext-1-labs-prod-misc-tools-us-east-0.proxy.cognitiveclass.ai']
+CSRF_TRUSTED_ORIGINS=['https://dmudassar2-8000.theianext-1-labs-prod-misc-tools-us-east-0.proxy.cognitiveclass.ai']
+# --- END: Required updates for Lab URL and Security ---
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [],
@@ -61,7 +64,11 @@ ROOT_URLCONF = 'djangoproj.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        # --- START: Required update for Frontend Template Location ---
+        'DIRS': [
+            os.path.join(BASE_DIR, 'frontend/static')
+        ],
+        # --- END: Required update for Frontend Template Location ---
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -134,5 +141,8 @@ MEDIA_URL = '/media/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-STATICFILES_DIRS = []
-
+# --- START: Required update for Frontend Static File Location ---
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'frontend/static')
+]
+# --- END: Required update for Frontend Static File Location ---

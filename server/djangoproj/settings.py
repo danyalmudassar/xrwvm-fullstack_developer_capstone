@@ -66,7 +66,9 @@ TEMPLATES = [
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         # --- START: Required update for Frontend Template Location ---
         'DIRS': [
-            os.path.join(BASE_DIR, 'frontend/static')
+            os.path.join(BASE_DIR, 'frontend/static'),
+            os.path.join(BASE_DIR, 'frontend/build'),        # ADDED
+            os.path.join(BASE_DIR, 'frontend/build/static'), # ADDED
         ],
         # --- END: Required update for Frontend Template Location ---
         'APP_DIRS': True,
@@ -143,6 +145,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # --- START: Required update for Frontend Static File Location ---
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'frontend/static')
+    os.path.join(BASE_DIR, 'frontend/static'),
+    os.path.join(BASE_DIR, 'frontend/build'),        # ADDED
+    os.path.join(BASE_DIR, 'frontend/build/static'), # ADDED
 ]
 # --- END: Required update for Frontend Static File Location ---

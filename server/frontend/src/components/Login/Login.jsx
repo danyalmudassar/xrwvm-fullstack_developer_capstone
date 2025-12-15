@@ -42,7 +42,7 @@ const Login = ({ onClose }) => {
 
   return (
     <div>
-      <Header/>
+      {/* 🛑 REMOVED <Header/> HERE: The Header is already provided by App.js 🛑 */}
     <div onClick={onClose}>
       <div
         onClick={(e) => {

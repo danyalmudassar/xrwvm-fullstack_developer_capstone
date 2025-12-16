@@ -13,6 +13,9 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+"""djangoproj URL Configuration
+... (docstrings) ...
+"""
 from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import TemplateView  
@@ -33,5 +36,9 @@ urlpatterns = [
     # --- START: Required path for Login (Serves React index.html) ---
     path('login/', TemplateView.as_view(template_name="index.html")),
     # --- END: Required path for Login ---
+    
+    # --- START: Required path for Register (Serves React index.html) ---
+    path('register/', TemplateView.as_view(template_name="index.html")), # <--- ADD THIS LINE
+    # --- END: Required path for Register ---
     
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

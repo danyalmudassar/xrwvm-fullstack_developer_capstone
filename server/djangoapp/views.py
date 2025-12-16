@@ -14,17 +14,15 @@ from django.contrib.auth import login, authenticate
 import logging
 import json
 from django.views.decorators.csrf import csrf_exempt
-# --- CRITICAL CHANGE: IMPORTING initiate FROM .populate ---
+
+# --- CRITICAL IMPORTS ---
 from .populate import initiate 
+# Import all required restapi functions: 
+from .restapis import get_request, get_dealers_from_api, get_dealer_reviews_from_api, analyze_review_sentiments, post_review 
 
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
-
-
-# --- POPULATE FUNCTION ---
-# The previous placeholder initiate() function has been REMOVED here
-# and is now imported from .populate.py to be compliant with the lab structure.
 
 
 # Create your views here.
@@ -83,7 +81,7 @@ def registration(request):
     return JsonResponse(data)
 
 
-# --- NEWLY ADDED VIEW FOR CARS ---
+# --- VIEW FOR CARS ---
 def get_cars(request):
     """
     Fetches the list of all CarModels and their associated CarMakes.
@@ -92,7 +90,6 @@ def get_cars(request):
     count = CarMake.objects.filter().count()
     print(f"Total Car Makes in DB: {count}")
     
-    # This now calls the initiate function imported from populate.py
     if count == 0:
         initiate() 
 
@@ -111,23 +108,102 @@ def get_cars(request):
     return JsonResponse({"CarModels": cars})
 
 
-# # Update the `get_dealerships` view to render the index page with
-# a list of dealerships
-# def get_dealerships(request):
-#     # ... implementation goes here ...
-#     pass
+# --- PROXY VIEW: GET DEALERSHIPS ---
+def get_dealerships(request, state="All"):
+    """
+    Proxy service view to fetch dealer data from the external backend API.
+    Can filter by state or return all dealers.
+    """
+    if(state == "All"):
+        endpoint = "/fetchDealers"
+    else:
+        # Note: The backend Express API must handle filtering via a path parameter
+        endpoint = "/fetchDealers/"+state
+        
+    print(f"Fetching dealers from endpoint: {endpoint}")
+    
+    # Use the generic get_request function to fetch data from the external backend
+    dealerships = get_request(endpoint)
+    
+    # Return the raw data directly to the client as JSON
+    return JsonResponse({"status": 200, "dealers": dealerships})
 
-# Create a `get_dealer_reviews` view to render the reviews of a dealer
-# def get_dealer_reviews(request,dealer_id):
-#     # ... implementation goes here ...
-#     pass
 
-# Create a `get_dealer_details` view to render the dealer details
-# def get_dealer_details(request, dealer_id):
-#     # ... implementation goes here ...
-#     pass
+# --- PROXY VIEW: GET DEALER DETAILS ---
+def get_dealer_details(request, dealer_id):
+    """
+    Proxy service view to fetch details for a single dealer by ID.
+    Uses /fetchDealer/<dealer_id> endpoint.
+    """
+    if(dealer_id):
+        endpoint = "/fetchDealer/"+str(dealer_id)
+        dealership = get_request(endpoint)
+        return JsonResponse({"status":200,"dealer":dealership})
+    else:
+        return JsonResponse({"status":400,"message":"Bad Request"})
 
-# Create a `add_review` view to submit a review
-# def add_review(request):
-#     # ... implementation goes here ...
-#     pass
+
+# --- PROXY VIEW: GET DEALER REVIEWS WITH SENTIMENT ANALYSIS ---
+def get_dealer_reviews(request, dealer_id):
+    """
+    Proxy service view to fetch reviews for a dealer, then analyzes the sentiment 
+    for each review using the external microservice.
+    """
+    # if dealer id has been provided
+    if(dealer_id):
+        endpoint = "/fetchReviews/dealer/"+str(dealer_id)
+        # Fetch reviews (raw JSON list/dict)
+        reviews = get_request(endpoint)
+        
+        # Check if reviews were successfully retrieved and is a list
+        if reviews is not None and isinstance(reviews, list):
+            for review_detail in reviews:
+                # 1. Extract the review text
+                review_text = review_detail.get('review', '')
+                
+                # 2. Call the sentiment microservice consumer
+                response = analyze_review_sentiments(review_text)
+                
+                # 3. Extract the sentiment result
+                print(f"Sentiment response for review: {response}")
+                review_detail['sentiment'] = response.get('sentiment', 'N/A')
+                
+            return JsonResponse({"status":200,"reviews":reviews})
+        else:
+             # Handle case where reviews could not be fetched
+            return JsonResponse({"status":404, "message":"Reviews not found for this dealer."})
+    else:
+        return JsonResponse({"status":400,"message":"Bad Request: Missing dealer ID"})
+
+
+# --- PROXY VIEW: ADD REVIEW ---
+@csrf_exempt
+def add_review(request):
+    """
+    Proxy service view to submit a new review via a POST request to the external backend.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({"status": 403, "message": "Unauthorized: User is not logged in"})
+        
+    if request.method == 'POST':
+        try:
+            # Load the JSON payload from the request body
+            data = json.loads(request.body)
+            print(f"Received review data: {data}")
+            
+            # Use the post_review utility function to send data to the backend
+            response = post_review(data)
+            
+            if response.get("status") == "success":
+                return JsonResponse({"status": 201, "message": "Review posted successfully"})
+            else:
+                # Return the error message provided by the post_review utility
+                return JsonResponse({"status": 500, "message": f"Failed to post review: {response.get('message')}"})
+
+        except json.JSONDecodeError:
+            return JsonResponse({"status": 400, "message": "Invalid JSON format in request body"})
+        except Exception as e:
+            logger.error(f"Error posting review: {e}")
+            return JsonResponse({"status": 500, "message": f"An unexpected error occurred: {str(e)}"})
+    else:
+        return JsonResponse({"status": 405, "message": "Method not allowed"})

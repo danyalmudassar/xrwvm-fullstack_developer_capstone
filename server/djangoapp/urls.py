@@ -1,4 +1,5 @@
-# Uncomment the imports before you add the code
+# server/djangoapp/urls.py
+
 from django.urls import path
 from django.conf.urls.static import static
 from django.conf import settings
@@ -6,25 +7,29 @@ from . import views
 
 app_name = 'djangoapp'
 urlpatterns = [
-    # path for registration
+    # --- USER AUTHENTICATION ROUTES ---
     path(route='registration', view=views.registration, name='registration'),
-
-    # path for login
     path(route='login', view=views.login_user, name='login'),
-
-    # path for logout
     path(route='logout', view=views.logout_request, name='logout'),
 
-    # path for get_cars (ADDED from previous step)
+    # --- CAR INVENTORY (Django ORM) ---
     path(route='get_cars', view=views.get_cars, name='getcars'),
     
-    # path for dealer reviews view (Placeholder for future lab steps)
-    # path(route='reviews/dealer/<int:dealer_id>', view=views.get_dealer_reviews, name='dealer_details'),
+    # --- DEALERSHIP PROXY ROUTES (GET requests) ---
+    # GET all dealers
+    path(route='get_dealers', view=views.get_dealerships, name='get_dealers'),
+    # GET dealers by state
+    path(route='get_dealers/<str:state>', view=views.get_dealerships, name='get_dealers_by_state'),
 
-    # path for add a review view (Placeholder for future lab steps)
-    # path(route='add_review', view=views.add_review, name='add_review'),
+    # GET dealer details by ID
+    path(route='dealer/<int:dealer_id>', view=views.get_dealer_details, name='dealer_details'),
+
+    # --- REVIEW PROXY ROUTES ---
+    # GET reviews for a specific dealer (includes Sentiment Analysis)
+    path(route='reviews/dealer/<int:dealer_id>', view=views.get_dealer_reviews, name='dealer_reviews'),
     
-    # Add other paths like get_dealerships, get_dealer_details here in future steps
+    # POST a new review
+    path(route='add_review', view=views.add_review, name='add_review'),
 
 # Serve static files and media files (if needed) during development
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) \
